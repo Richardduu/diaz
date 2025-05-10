@@ -1,6 +1,7 @@
 package cl.usm.tel335
 
-import cl.usm.tel335.model.Entidades
+import cl.usm.tel335.model.Animal
+import cl.usm.tel335.model.tipos
 import cl.usm.tel335.model.entidades
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -12,16 +13,23 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "127.0.0.1", module = Application::module)
         .start(wait = true)
 }
 
+
+
 fun Application.module() {
     configureSerialization()
+
     routing {
-        route("/entidades") {
+        route("/animal") {
             get("/") {
                 call.respond(HttpStatusCode.OK, entidades)
             }
@@ -36,7 +44,7 @@ fun Application.module() {
             }
 
             post("/") {
-                val entidad = call.receive<Entidades>()
+                val entidad = call.receive<Animal>()
                 val index = entidades.indexOfFirst { it.id == entidad.id }
 
                 if (index == -1) {
@@ -59,8 +67,8 @@ fun Application.module() {
                 if (index == -1) {
                     call.respond(HttpStatusCode.NotFound, "Entidad no encontrada")
                 } else {
-                    val actualizada = call.receive<Entidades>()
-                    entidades[index] = actualizada.copy(id = id)
+                    val actualizada = call.receive<Animal>()
+                    entidades[index] = Animal(id = id, nombre = actualizada.nombre)
                     call.respond(HttpStatusCode.OK, "Entidad reemplazada correctamente")
                 }
             }
@@ -75,9 +83,24 @@ fun Application.module() {
                     call.respond(HttpStatusCode.NotFound, "Entidad no encontrada")
                 }
             }
+                    route("/tipo") { //3 tipos: mamifero, ave e insecto
+                        get("/") {
+                            call.respond(HttpStatusCode.OK, tipos)
+                        }
+                        get("/mamifero") {
+                            call.respond(HttpStatusCode.OK, tipos.filter { it.tipo == "mamifero" })
+                        }
+                        get("/ave") {
+                            call.respond(HttpStatusCode.OK, tipos.filter { it.tipo == "ave" })
+                        }
+                        get("/insecto") {
+                            call.respond(HttpStatusCode.OK, tipos.filter { it.tipo == "insecto" })
+                    }}
+                }
+            }
+
         }
-    }
-}
+
 fun Application.configureSerialization(){
     install(ContentNegotiation){
         json()
